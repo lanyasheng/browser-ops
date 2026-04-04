@@ -1,0 +1,31 @@
+[
+  {
+    "type": "reliability",
+    "succeeded": true,
+    "context": {
+      "dimension": "reliability",
+      "scores": {
+        "coverage": 1.0,
+        "accuracy": 0.67,
+        "efficiency": 1.0,
+        "reliability": 1.0,
+        "security": 0.83,
+        "trigger_quality": 0.4
+      },
+      "notes": "trigger_quality=0.4 was from v3.2.0 description. v4.1.0 expanded trigger keywords significantly — pending re-evaluation"
+    },
+    "timestamp": "2026-04-02T14:04:59Z",
+    "hit_count": 1
+  },
+  {
+    "type": "fix",
+    "succeeded": true,
+    "context": {
+      "dimension": "trigger_quality",
+      "action": "Expanded SKILL.md description with multi-line trigger keywords covering: Chinese/English queries, platform names, failure scenarios (打不开/拦截/验证码/超时), URL access issues, stock/trending queries",
+      "files_changed": ["SKILL.md", "evals/evals.json", "evals/trigger_evals.json", "evals/eval_results.json", "README.md", "tests/test_smoke.py", "task_suite.yaml"]
+    },
+    "timestamp": "2026-04-04T16:10:00Z",
+    "hit_count": 1
+  }
+]
