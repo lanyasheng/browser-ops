@@ -38,6 +38,20 @@ license: MIT
 
 **自检**: 选择工具后，内心确认 "为什么不用更便宜的工具？" 如果没有具体原因（403/SSO/需要交互），就应该用更便宜的。
 
+<anti-example>
+用户: "帮我看看 https://example.com/article 的内容"
+错误: browser-use -p "go to example.com/article and extract the content"
+原因: 用 AI Agent 模式 ($0.05) 做 WebFetch ($0) 就能完成的事
+正确: WebFetch("https://example.com/article", "提取正文内容")
+</anti-example>
+
+<anti-example>
+用户: "搜索一下 AI agent 最新进展"
+错误: opencli operate open "https://google.com" → type "AI agent" → click search
+原因: 用浏览器模拟搜索，而不是用搜索工具
+正确: WebSearch("AI agent 最新进展 2026") 或 Tavily/Exa MCP
+</anti-example>
+
 ## 前置条件
 
 ```bash
@@ -65,11 +79,11 @@ npm i -g firecrawl-mcp                     # 深度内容提取 (需 FIRECRAWL_A
 │     否 → 降级: WebSearch + WebFetch + browser-use
 │
 ├─ 1. 要搜索（没给 URL）？
-│     ├─ 实时新闻/深度搜索 → Tavily (search_depth: advanced)
-│     ├─ 语义/概念搜索 → Exa MCP
-│     ├─ 通用搜索 → Brave Search / WebSearch (内置)
+│     ├─ 通用搜索 (始终可用) → WebSearch (内置) / Exa MCP
+│     ├─ 深度/实时搜索 → Tavily (需 API key, 如未配置跳过)
+│     ├─ 独立索引搜索 → Brave Search (需 API key, 如未配置跳过)
 │     ├─ 平台内搜索 → opencli <platform> search (75 站点)
-│     └─ 以上都不可用 → opencli google search (fallback)
+│     └─ fallback → opencli google search
 │
 ├─ 2. 有 URL，要内容？
 │     ├─ WebFetch → 403? → opencli web read (Chrome 登录态)
@@ -90,7 +104,13 @@ npm i -g firecrawl-mcp                     # 深度内容提取 (需 FIRECRAWL_A
 └─ 如果不确定该用哪个工具，告知用户当前状态并建议选项，不要猜测
 ```
 
-必须按路由表从免费层开始，否则会浪费 token 和费用。不要直接跳到 browser-use AI Agent 模式，而是先试 WebFetch 和 opencli。
+## Pre-Action Gate
+
+MUST 在调用任何浏览器工具（opencli operate / agent-browser / browser-use）之前回答这 3 个问题：
+1. **我试过 WebFetch 了吗？** 没有 → 先试 WebFetch。
+2. **WebFetch 失败了吗（403/空/SSO）？** 没失败 → 用 WebFetch 的结果，停止。
+3. **我选的是最便宜的工具吗？** opencli operate ($0) < agent-browser ($0) < browser-use ($0.01-0.05/步)。
+不确定用哪个？默认链: WebFetch → opencli web read → opencli operate → agent-browser。全部失败才问用户。
 
 ## 搜索工具选择
 
