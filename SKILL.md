@@ -6,6 +6,7 @@ description: >-
   Tavily Brave Exa Firecrawl Serper search 搜索引擎 语义搜索 新闻搜索 深度搜索。
   Twitter 微博 小红书 知乎 HackerNews Reddit B站 GitHub trending 豆瓣 淘宝 京东 A股 股价 实时行情。
   opencli browser-use agent-browser zendriver stagehand operate。
+  IMPORTANT: MUST start with free tools (WebFetch/WebSearch), NEVER jump directly to browser-use/agent-browser. Upgrade only after free tool fails (403/SSO/need interaction).
   Use when user wants to search visit scrape fetch browse any website, check stock prices, get trending topics, take screenshots, bypass anti-bot, reuse login sessions, download web content, fill web forms, batch query web data.
   Also use when WebFetch fails with 403 blocked or empty response.
   Also use when user mentions 打不开 拦截 验证码 超时 加载慢 内部网站 内网 SSO or any URL access issue.
@@ -17,13 +18,25 @@ license: MIT
 
 > 这不是一个工具，是一份给 AI 的选工具攻略。搜索→提取→交互→反爬，按成本逐级升级。
 
-## 强制约束 (P0)
+## 强制约束
 
-1. **MUST 从免费层开始**: 每次网页任务 MUST 先尝试 WebFetch/WebSearch，NEVER 直接跳到 browser-use/agent-browser/Stagehand。否则会浪费 $0.01-0.05/步的 LLM token。
-2. **MUST 按路由表顺序升级**: WebFetch 403 → opencli web read → Firecrawl → browser-use。NEVER 跳级。
-3. **NEVER 在没有 `opencli doctor` 确认的情况下推荐 opencli 命令**: 如果不确定 opencli 是否可用，先运行 `opencli doctor`。
-4. **MUST 区分搜索和提取**: 没有 URL 时走搜索层（Tavily/Exa/Brave），有 URL 时走提取层（WebFetch/opencli/Firecrawl）。NEVER 用搜索工具去读一个已知 URL。
-5. **MUST 优先 opencli operate 再 agent-browser**: 简单交互（≤3 步）用 opencli operate。NEVER 为了一个点击就启动 agent-browser（60+ 命令的工具链太重了）。
+这些规则是路由表的硬性前提。违反任何一条都会导致不必要的费用或失败。
+
+**路由顺序**:
+- MUST 从免费层开始（WebFetch/WebSearch）。NEVER 直接跳到 browser-use/agent-browser/Stagehand — 否则每步浪费 $0.01-0.05 的 LLM token，"读一篇文章"这种任务用 WebFetch 零成本就够了。
+- MUST 按路由表逐级升级: WebFetch 403 → opencli web read → Firecrawl。NEVER 跳级。
+
+**搜索 vs 提取**:
+- 没有 URL → 走搜索层（Tavily/Exa/Brave/WebSearch）。有 URL → 走提取层（WebFetch/opencli/Firecrawl）。NEVER 用搜索工具去读一个已知 URL，也 NEVER 用浏览器工具去搜索。
+
+**交互工具选择**:
+- ≤3 步简单交互 → opencli operate。>3 步或需要 Ref 引用 → agent-browser。需要 AI 自主决策 → browser-use -p。NEVER 为了一个点击就启动 agent-browser 或 browser-use（工具链太重）。
+
+**工具可用性**:
+- NEVER 推荐 opencli 命令但不确认它是否可用。如果不确定 → 先运行 `opencli doctor`。
+- 搜索 MCP（Tavily/Brave/Firecrawl）需要 API key。如果未配置 → 回退到 WebSearch/WebFetch。
+
+**自检**: 选择工具后，内心确认 "为什么不用更便宜的工具？" 如果没有具体原因（403/SSO/需要交互），就应该用更便宜的。
 
 ## 前置条件
 
