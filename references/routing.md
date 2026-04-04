@@ -1,70 +1,78 @@
 # 路由决策树
 
-> 与 SKILL.md 保持一致。SKILL.md 是权威源，本文件是补充说明。
+> 与 SKILL.md 保持一致。SKILL.md 是权威源。
 
-## 核心原则
+## 四层模型
 
-能免费就不花钱，能不开浏览器就不开。
+| 层 | 工具 | 场景 |
+|----|------|------|
+| **搜索层** | Tavily / Exa / Brave / WebSearch / opencli \<platform\> | 没有 URL，需要找信息 |
+| **提取层** | WebFetch / opencli web read / Firecrawl | 有 URL，要内容 |
+| **交互层** | opencli operate / agent-browser / browser-use | 有 URL，要操作页面 |
+| **反爬层** | Zendriver | 被拦截 |
 
-## 决策树
+## 搜索层路由
 
 ```
-收到网页任务
-│
-├── 0. 工具可用吗？
-│   └── opencli doctor → 3 个 OK？
-│       ├── 是 → 正常路由（见下方）
-│       └── 否 → 降级模式（仅 WebSearch + WebFetch + browser-use）
-│
-├── 1. 有官方 API / RSS？
-│   └── 是 → 直接调 API ($0)
-│
-├── 2. 要搜索（没给 URL）？
-│   ├── WebSearch (内置, 第一选择)
-│   ├── Exa MCP web_search_exa (语义搜索)
-│   └── opencli google search "关键词"
-│
-├── 3. 有明确 URL？
-│   ├── 读内容 → WebFetch → 失败(403/SSO) → opencli web read
-│   ├── 已知平台？→ opencli <platform> <cmd> (75 站点, `opencli list` 查看)
-│   └── 批量(>10/分钟) → Python asyncio + aiohttp / AKShare
-│
-├── 4. 需要交互（点击/填表/截图）？
-│   ├── opencli operate (首选: Cookie 零配置)
-│   │   open → state → click/type/select/scroll → screenshot → close
-│   ├── 复杂多步任务 → browser-use -p "自然语言描述" (AI Agent)
-│   └── 未知 DOM → Stagehand act/extract (~$0.001/动作)
-│
-└── 5. 被反爬拦截？
-    └── Zendriver (~90% bypass)
+要搜索？
+├─ 实时新闻/深度 → Tavily (search_depth: advanced, 返回 answer + results)
+├─ 语义/概念 → Exa MCP (neural search, 代码/论文质量高)
+├─ 通用 → Brave Search (独立索引) / WebSearch (内置免费)
+├─ 平台内 → opencli <platform> search (75 站点)
+└─ fallback → opencli google search
 ```
 
-## 工具三层模型
+### 搜索工具选择依据
 
-| 层 | 工具 | 场景 | Cookie | 费用 |
-|----|------|------|--------|------|
-| 免费层 | WebSearch / WebFetch | 搜索、读公开网页 | 不需要 | $0 |
-| opencli 层 | opencli web read / operate / \<platform\> | 内网SSO、填表、75站点 | Chrome 直连 | $0 |
-| 升级层 | browser-use (AI Agent) / Zendriver (反爬) | 复杂任务、被拦截 | 需文件导入或 CDP | $0-0.05/步 |
+- **Tavily**: AI Agent 事实标准，LangChain 默认，返回结构化 answer，1000 次/月免费
+- **Exa**: 语义搜索最强，适合概念性问题和代码搜索
+- **Brave**: Anthropic 官方推荐 MCP，独立索引不依赖 Google/Bing
+- **WebSearch**: 内置零成本，通用性最好
+- **opencli google search**: 实际 Google 结果，但高频 CAPTCHA
 
-## 升级/回退信号
+## 提取层路由
 
-| 信号 | 动作 |
-|------|------|
-| WebFetch 返回 403/空 | → `opencli web read` |
-| opencli exit 77 | → Chrome 中手动登录，再重试 |
-| 需要点击/填表 | → `opencli operate` |
-| 多步复杂交互 | → `browser-use -p "任务"` |
-| 被反爬拦截 | → Zendriver |
+```
+有 URL？
+├─ 公开网页 → WebFetch ($0)
+├─ 403/SSO → opencli web read (Chrome 登录态)
+├─ 要深度提取 (JS 渲染/PDF/结构化) → Firecrawl scrape
+├─ 批量站点 → Firecrawl crawl (异步)
+└─ 已知平台 → opencli <platform> <cmd>
+```
 
-## 降级模式（opencli 不可用时）
+## 交互层路由
 
-如果 `opencli doctor` 不通过（Extension 没装 / Chrome 没开），只能用：
+```
+要交互？
+├─ 简单 (点击/填表/截图, Cookie 直连) → opencli operate
+├─ 复杂 (Ref 引用/录制/批量/标注截图) → agent-browser
+├─ AI 自主多步 → browser-use -p "任务"
+└─ 未知 DOM → Stagehand act/extract
+```
 
-- WebSearch / WebFetch — 读公开网页
-- browser-use CLI — 浏览器交互（需要自己处理 Cookie）
-- Zendriver — 反爬
+### opencli operate vs agent-browser
 
-丢失的能力：75 站点适配器、Cookie 零配置、operate 交互。
+| 维度 | opencli operate | agent-browser |
+|------|----------------|---------------|
+| 命令数 | 17 个 | 60+ 个 |
+| 元素定位 | `[1]` 编号（可能变） | `@e1` Ref 引用（稳定） |
+| Cookie | Chrome 直连零配置 | `--profile` / `--auto-connect` |
+| 标注截图 | ❌ | ✅ `--annotate` |
+| 录制回放 | ❌ | ✅ `record` |
+| 批量命令 | ❌ | ✅ `batch` |
+| DOM diff | ❌ | ✅ `diff` |
+| iOS 测试 | ❌ | ✅ `-p ios` |
+| 安装依赖 | 同 opencli | 独立 npm 包 |
 
-> See also: `setup.md`（安装验证）, `state-management.md`（Cookie 持久化）
+**简单规则**: 3 步以内用 opencli operate，需要 Ref 引用或录制用 agent-browser。
+
+## 降级模式
+
+opencli 不可用时（Extension 没装 / Chrome 没开）:
+- 搜索: Tavily / Exa / Brave / WebSearch
+- 提取: WebFetch / Firecrawl
+- 交互: browser-use / agent-browser（独立 Chromium）
+- 反爬: Zendriver
+
+> See also: `setup.md`（安装）, `state-management.md`（Cookie）
