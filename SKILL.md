@@ -8,6 +8,8 @@ description: >-
   Use when user wants to search visit scrape fetch browse any website, check stock prices, get trending topics, take screenshots, bypass anti-bot, reuse login sessions, download web content, fill web forms, batch query web data.
   Also use when WebFetch fails with 403 blocked or empty response.
   Also use when user mentions 打不开 拦截 验证码 超时 加载慢 内部网站 内网 SSO or any URL access issue.
+  不适用于: 跨主机远程浏览器控制(用 browser-automation-mcp)、高并发爬取(用 Python asyncio)、非 DOM 界面操作(用 Computer Use)。
+license: MIT
 ---
 
 # Browser Operations — 网页访问路由决策指南
@@ -73,6 +75,16 @@ opencli doctor
 | **升级层** | browser-use (AI Agent) / Zendriver (反爬) | 复杂任务、被拦截 | 需文件导入或 CDP |
 
 90% 的日常任务在前两层解决。
+
+## 工作流步骤
+
+1. 检查 `opencli doctor` — 三个 OK 才走 opencli 路径，否则降级到 WebFetch + browser-use
+2. 按路由决策树匹配任务类型
+3. 执行对应工具命令
+4. 失败时按升级信号切换到下一层工具
+5. 如果不确定该用哪个工具，告知用户当前状态并建议选项，不要猜测
+
+必须按路由表从免费层开始，否则会浪费 token 和费用。不要直接跳到 browser-use AI Agent 模式，而是先试 WebFetch 和 opencli。
 
 ## 升级/回退信号
 
@@ -155,6 +167,10 @@ browser-use doctor 2>&1 | grep -v "tip:" # browser-use (按需)
 - **opencli 依赖 Chrome Extension**: 没装扩展就不能用，`opencli doctor` 会报 MISSING
 - **Cookie ≠ 登录态**: SSO token 会过期。过期后 `opencli web read` 返回 302/403，需要在 Chrome 里重新登录
 - **opencli google search 高频 CAPTCHA**: 回退到 WebSearch
+
+## Output
+
+路由完成后，返回工具的原始输出（Markdown/JSON/截图路径）。不要额外包装格式。
 
 ## References
 
