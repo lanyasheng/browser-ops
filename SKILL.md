@@ -17,6 +17,14 @@ license: MIT
 
 > 这不是一个工具，是一份给 AI 的选工具攻略。搜索→提取→交互→反爬，按成本逐级升级。
 
+## 强制约束 (P0)
+
+1. **MUST 从免费层开始**: 每次网页任务 MUST 先尝试 WebFetch/WebSearch，NEVER 直接跳到 browser-use/agent-browser/Stagehand。否则会浪费 $0.01-0.05/步的 LLM token。
+2. **MUST 按路由表顺序升级**: WebFetch 403 → opencli web read → Firecrawl → browser-use。NEVER 跳级。
+3. **NEVER 在没有 `opencli doctor` 确认的情况下推荐 opencli 命令**: 如果不确定 opencli 是否可用，先运行 `opencli doctor`。
+4. **MUST 区分搜索和提取**: 没有 URL 时走搜索层（Tavily/Exa/Brave），有 URL 时走提取层（WebFetch/opencli/Firecrawl）。NEVER 用搜索工具去读一个已知 URL。
+5. **MUST 优先 opencli operate 再 agent-browser**: 简单交互（≤3 步）用 opencli operate。NEVER 为了一个点击就启动 agent-browser（60+ 命令的工具链太重了）。
+
 ## 前置条件
 
 ```bash
