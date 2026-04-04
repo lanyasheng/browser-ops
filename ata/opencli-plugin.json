@@ -1,6 +1,0 @@
-{
-  "name": "ata",
-  "version": "0.1.0",
-  "description": "ATA (阿里巴巴技术协会) 文章搜索",
-  "opencli": ">=1.5.9"
-}

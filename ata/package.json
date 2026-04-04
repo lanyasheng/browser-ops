@@ -1,9 +1,0 @@
-{
-  "name": "opencli-plugin-ata",
-  "version": "0.1.0",
-  "type": "module",
-  "description": "An opencli plugin: ata",
-  "peerDependencies": {
-    "@jackwener/opencli": ">=1.5.9"
-  }
-}
