@@ -168,4 +168,4 @@ Cookie: `~/.browser-ops/cookie-store/unified-state.json`，详见 `references/st
 
 ## 版本历史
 
-- **4.1.0**: 去掉 Playwright MCP (browser-use --mcp 覆盖) | **4.0.0**: 精简工具栈 | **1.0**: 初版
+- **1.0.0** (2026-04-04): 首个正式发布版。Cookie 互通验证通过，工具栈精简为 4 层，去掉 Playwright MCP 和 agent-browser 直接依赖
