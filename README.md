@@ -134,3 +134,8 @@ browser-ops/
 ## 许可证
 
 MIT — 详见 [LICENSE](LICENSE)
+
+## Operator Notes
+
+- This skill is advisory/planning-oriented. It does not connect to external delivery platforms, schedule sends, or manage subscribers directly.
+- When answering requests, keep the strategy inside the skill and explicitly call out when execution, analytics, or platform operations require a separate automation or operator workflow.
