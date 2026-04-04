@@ -11,22 +11,30 @@ description: >-
   Trigger on: 抓取 网页 股价 热榜 截图 网站 浏览器 爬取 下载网页 批量 Cloudflare cookie 登录态 反爬 URL打不开 内部网站 小红书 知乎 HackerNews Twitter 微博 B站
 ---
 
-# Browser Operations — 网页访问路由器
+# Browser Operations — 网页访问路由决策指南
 
-**这个 Skill 是什么**: AI 的网页任务决策指南。按成本从低到高自动选择工具，失败自动升级。
+> 这不是一个工具，是一份给 AI 的选工具攻略。按成本从低到高自动选择，失败自动升级。
 
-**为什么需要它**: 没有这个 Skill，AI 只会用 WebFetch，遇到 403/SSO/反爬就放弃。有了它，AI 逐级升级直到成功。
+没有这个 Skill，AI 遇到 403/SSO/反爬只会放弃。有了它，AI 按 WebFetch → opencli → browser-use → Zendriver 逐级升级直到成功。
 
-**工具栈**:
+## 前置条件
 
-| 类别 | 主力工具 | 备选 |
-|------|---------|------|
-| 搜索 | WebSearch (内置) | Exa MCP |
-| 读网页 | WebFetch → opencli web read | Jina |
-| 已知平台 | opencli (75站点适配器) | — |
-| 浏览器交互 | opencli operate (Cookie 直连) | browser-use CLI |
-| AI 驱动任务 | browser-use (自然语言 Agent) | Stagehand |
-| 反爬 | Zendriver | Camoufox |
+```bash
+# 1. 装 opencli (必须)
+npm i -g @jackwener/opencli
+
+# 2. Chrome 里装 OpenCLI Browser Bridge 扩展
+#    扩展文件: ~/.npm-global/lib/node_modules/@jackwener/opencli/extension
+#    Chrome → chrome://extensions → 开发者模式 → 加载已解压的扩展程序
+
+# 3. 验证 (三个 OK 才能用)
+opencli doctor
+# [OK] Daemon: running
+# [OK] Extension: connected
+# [OK] Connectivity: connected
+```
+
+**按需装**: `pip install browser-use` (AI Agent) / `pip install zendriver` (反爬)
 
 ## 路由决策树
 
@@ -44,88 +52,67 @@ description: >-
 │  └─ 批量(>10/分钟) → AKShare/API 批量请求
 │
 ├─ 需要交互（点击/填表/截图）？
-│  ├─ opencli operate ⭐ (首选: Cookie 零配置, 含 type/select/scroll/wait/keys)
-│  ├─ 复杂多步任务 → browser-use -p "自然语言任务描述" (AI Agent 模式)
+│  ├─ opencli operate ⭐ (首选: Cookie 零配置)
+│  ├─ 复杂多步任务 → browser-use -p "自然语言" (AI Agent)
 │  └─ 未知 DOM → Stagehand act/extract (~$0.001/动作)
 │
 └─ 被反爬拦截？→ Zendriver (~90% bypass)
 ```
 
-**核心原则**: 内置优先 → opencli → browser-use → 反爬。
+## 工具栈 (3 层，不是 6 层)
 
-## opencli operate vs browser-use 选择指南
+| 层 | 工具 | 什么时候用 | Cookie |
+|----|------|-----------|--------|
+| **免费层** | WebSearch / WebFetch | 搜索、读公开网页 | 不需要 |
+| **opencli 层** | opencli web read / operate / \<platform\> | 内网SSO、填表、75站点 | Chrome 直连，零配置 |
+| **升级层** | browser-use (AI Agent) / Zendriver (反爬) | 复杂任务、被拦截 | 需文件导入或 CDP |
 
-| 场景 | 用 opencli operate | 用 browser-use |
-|------|-------------------|---------------|
-| 点击/填表/截图 | ✅ 首选（Cookie 直连） | 备选 |
-| 下拉选择/滚动/键盘/等待 | ✅ 原生支持 | ❌ 无专用命令 |
-| 查看网络请求 | ✅ `operate network` | ❌ 不支持 |
-| 自然语言驱动复杂任务 | ❌ 不支持 | ✅ `browser-use -p "任务"` |
-| MCP Server 模式 | ❌ 不支持 | ✅ `browser-use --mcp` |
-| 云端远程执行 | ❌ 不支持 | ✅ `run --remote` |
-| 会话分享/隧道 | ❌ 不支持 | ✅ `session share` / `tunnel` |
-| LLM 结构化提取 | ❌ 不支持 | ✅ `browser-use extract` |
-| 需要登录态 | ✅ 天然复用 Chrome Cookie | 需文件导入或 CDP |
+90% 的日常任务在前两层解决。
 
-**简单规则**: 能用 opencli operate 就用它（快、免费、Cookie 直连）。需要 AI 理解页面或云端执行时用 browser-use。
-
-## 升级/回退
+## 升级/回退信号
 
 | 信号 | 动作 |
 |------|------|
-| WebFetch 返回 403/空 | → `opencli web read`（复用 Chrome 登录态）|
-| 内部站点/SSO | → `opencli web read`（WebFetch 无法访问内网）|
+| WebFetch 返回 403/空 | → `opencli web read` |
+| 内部站点/SSO | → `opencli web read` |
 | opencli exit 77 | → Chrome 中手动登录，再重试 |
-| 需要点击/填表 | → `opencli operate open <url>` + `state` + `type/click` |
-| 多步复杂交互 | → `browser-use -p "完成整个购物流程"` |
-| selector 频繁失效 | → Stagehand act("点击XX") |
+| 需要点击/填表 | → `opencli operate open` + `state` + `type/click` |
+| 多步复杂交互 | → `browser-use -p "任务描述"` |
 | 被反爬拦截 | → Zendriver |
 
 ## 工具速查
 
-### opencli operate (浏览器交互首选)
+### opencli (90% 场景的首选)
 
 ```bash
-opencli operate open "https://example.com"    # 打开 URL
-opencli operate state                         # 查看可交互元素 [N]
-opencli operate click 5                       # 点击元素
-opencli operate type 3 "hello"                # 输入文本
-opencli operate select 2 "选项A"              # 下拉选择
-opencli operate scroll down                   # 滚动
-opencli operate keys Enter                    # 按键
-opencli operate wait text "Success"           # 等待文本出现
+# 读网页 (复用 Chrome 登录态，零配置)
+opencli web read --url "https://internal-site.com"
+
+# 75 站点适配器
+opencli twitter trending / xiaohongshu search "旅行" / zhihu hot / hackernews top
+
+# 浏览器交互 (Cookie 零配置)
+opencli operate open "https://example.com"
+opencli operate state                         # 可交互元素 [N]
+opencli operate click 5                       # 点击
+opencli operate type 3 "hello"                # 输入
+opencli operate select 2 "选项A"              # 下拉
+opencli operate scroll down / keys Enter      # 滚动 / 按键
+opencli operate wait text "Success"           # 等待
 opencli operate screenshot /tmp/shot.png      # 截图
-opencli operate eval "document.title"         # 执行 JS
-opencli operate network                       # 查看网络请求
+opencli operate network                       # 网络请求
 opencli operate close                         # 关闭
 ```
 
-### opencli 平台适配器 (75 站点)
+### browser-use CLI (复杂任务 / AI Agent / 云端)
 
 ```bash
-opencli twitter trending / xiaohongshu search "旅行" / zhihu hot / hackernews top
-opencli web read --url "https://any-url.com"  # 万能抓取
-```
-
-### browser-use CLI (AI Agent / MCP / 云端)
-
-```bash
-# AI Agent 模式: 用自然语言描述任务，LLM 自动操作浏览器
-browser-use -p "去 example.com 登录然后截图"
-browser-use "搜索 AI agent 相关文章并提取标题"
-
-# MCP Server 模式 (Claude Code / Cursor 集成)
-browser-use --mcp
-
-# 云端远程执行 (不需要本地浏览器)
-browser-use run --remote "抓取页面内容"
-
-# 会话管理
-browser-use session list / create / share
-browser-use tunnel 3000                       # 暴露本地浏览器为公网 URL
-
-# 连接已有 Chrome
-browser-use --cdp-url ws://localhost:9222 -p "任务"
+browser-use -p "去 example.com 登录然后截图"   # AI Agent 模式
+browser-use --mcp                              # MCP Server
+browser-use run --remote "抓取页面内容"         # 云端执行
+browser-use --connect open "https://site.com"  # 连接已有 Chrome
+browser-use session list / share               # 会话管理
+browser-use tunnel 3000                        # 隧道
 ```
 
 ### Zendriver (反爬)
@@ -136,39 +123,43 @@ browser = await zd.start()
 page = await browser.get("https://protected-site.com")
 ```
 
-## Bootstrap
+## Cookie: 零配置 > 文件导出
 
-首次使用按需安装:
-- **必装**: `npm i -g @jackwener/opencli`
-- **按需**: `pip install browser-use` (AI Agent) / `pip install zendriver` (反爬) / `npm i @browserbasehq/stagehand` (AI DOM)
+**90% 场景不需要导出 Cookie。** opencli 通过 Chrome Extension 直接读 Chrome 的 Cookie，你在 Chrome 里登录了什么就能访问什么。
 
-Cookie: `~/.browser-ops/cookie-store/unified-state.json`，详见 `references/state-management.md`
+只有独立浏览器实例（Stagehand、Zendriver）才需要文件导出：
+```bash
+bash scripts/sync-cookies.sh export     # 导出到 unified-state.json
+bash scripts/sync-cookies.sh status     # 查看状态
+bash scripts/sync-cookies.sh verify     # 端到端验证
+```
 
-## 实战验证 (2026-04-04)
+## 健康检查
 
-| 工具 | 状态 | 说明 |
-|------|------|------|
-| opencli web read | ✅ | ATA/SSO 正常 |
-| opencli \<platform\> | ✅ | 75 站点，google search 偶尔 CAPTCHA |
-| opencli operate | ✅ | open/state/click/type/scroll/screenshot 全部通过 |
-| browser-use CLI | ✅ | doctor 4/5，--mcp 可用 |
-| Zendriver | ✅ | Python >=3.10 |
+```bash
+# 一键检查所有工具状态
+bash scripts/sync-cookies.sh verify
 
-## 已知坑
+# 或逐个检查
+opencli doctor                           # opencli + Extension
+browser-use doctor 2>&1 | grep -v "tip:" # browser-use (按需)
+```
 
-- **opencli operate 需要 Extension**: Chrome 必须安装 OpenCLI Browser Bridge 扩展且保持运行
-- **Cookie ≠ 登录态**: 文件中 SSO token 可能服务端已过期。opencli 是唯一透明复用 Chrome 登录态的工具
-- **opencli google search**: 高频会 CAPTCHA，回退 WebSearch
+## 已知限制
+
+- **opencli 依赖 Chrome Extension**: 没装扩展就不能用，`opencli doctor` 会报 MISSING
+- **Cookie ≠ 登录态**: SSO token 会过期。过期后 `opencli web read` 返回 302/403，需要在 Chrome 里重新登录
+- **opencli google search 高频 CAPTCHA**: 回退到 WebSearch
 
 ## References
 
 - `references/setup.md` — 安装与验证
-- `references/opencli-usage.md` — opencli 详解
-- `references/architecture.md` — 架构 + 竞品全景对比
-- `references/state-management.md` — Cookie 持久化
+- `references/routing.md` — 路由决策树
+- `references/state-management.md` — Cookie 持久化 (仅 Stagehand/Zendriver 需要)
 - `references/anti-detection.md` — 反爬策略
 
 ## 版本历史
 
-- **1.0.1** (2026-04-04): opencli operate 升为浏览器交互首选（v1.6.1 支持 type/select/scroll/wait/keys），browser-use 定位为 AI Agent/MCP/云端
-- **1.0.0** (2026-04-04): 首个正式发布版。Cookie 互通验证通过，工具栈精简为 4 层
+- **1.1.0** (2026-04-04): 重新定位 — 路由决策指南（不是工具），Cookie 零配置（不是互通），3 层工具栈（不是 6 层），加前置条件和健康检查
+- **1.0.1** (2026-04-04): opencli operate 升为浏览器交互首选
+- **1.0.0** (2026-04-04): 首个正式发布版

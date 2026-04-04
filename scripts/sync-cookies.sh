@@ -4,7 +4,7 @@
 #
 # 用法:
 #   sync-cookies.sh export              # 从 agent-browser 导出到统一存储
-#   sync-cookies.sh export-chrome       # 从 Chrome Cookies DB 直接导出（无需 agent-browser）
+#   sync-cookies.sh health              # 检查所有工具健康状态
 #   sync-cookies.sh import-bu           # 从统一存储导入到 browser-use CLI
 #   sync-cookies.sh inject-py <url>     # 用 Python 注入 Cookie 到 Playwright 页面
 #   sync-cookies.sh login <url>         # 打开 URL 手动登录 → 自动导出
@@ -43,7 +43,8 @@ case "${1:-help}" in
   export)
     echo -e "${GREEN}从 agent-browser 导出 Cookie 到统一存储...${NC}"
     if ! command -v agent-browser &>/dev/null; then
-      echo -e "${RED}agent-browser 未安装。用 export-chrome 替代。${NC}"
+      echo -e "${RED}agent-browser 未安装。${NC}"
+      echo "安装: npm i -g agent-browser"
       exit 1
     fi
     agent-browser --profile "$PROFILE_DIR" open "about:blank" 2>/dev/null || true
@@ -60,70 +61,61 @@ case "${1:-help}" in
     fi
     ;;
 
-  export-chrome)
-    echo -e "${GREEN}从 Chrome Cookies 数据库直接导出...${NC}"
-    CHROME_COOKIES="$HOME/Library/Application Support/Google/Chrome/Default/Cookies"
-    if [[ ! -f "$CHROME_COOKIES" ]]; then
-      echo -e "${RED}Chrome Cookies 数据库不存在: $CHROME_COOKIES${NC}"
-      exit 1
+  health)
+    echo -e "${CYAN}=== browser-ops 健康检查 ===${NC}"
+    echo ""
+    FAIL=0
+
+    # 1. opencli
+    if command -v opencli &>/dev/null; then
+      DOCTOR=$(opencli doctor 2>&1)
+      if echo "$DOCTOR" | grep -q "\[OK\] Connectivity"; then
+        echo -e "${GREEN}[OK]${NC} opencli: daemon + extension + connectivity"
+      elif echo "$DOCTOR" | grep -q "\[OK\] Daemon"; then
+        echo -e "${YELLOW}[WARN]${NC} opencli: daemon running but extension not connected"
+        echo "      → Chrome 里装 OpenCLI Browser Bridge 扩展"
+        FAIL=1
+      else
+        echo -e "${RED}[FAIL]${NC} opencli: daemon not running"
+        echo "      → 运行: opencli daemon restart"
+        FAIL=1
+      fi
+    else
+      echo -e "${RED}[FAIL]${NC} opencli 未安装"
+      echo "      → npm i -g @jackwener/opencli"
+      FAIL=1
     fi
 
-    python3 << 'PYEOF'
-import json, sqlite3, os, shutil, tempfile, time
+    # 2. browser-use (按需)
+    if command -v browser-use &>/dev/null; then
+      echo -e "${GREEN}[OK]${NC} browser-use 已安装"
+    else
+      echo -e "${YELLOW}[SKIP]${NC} browser-use 未安装 (按需: pip install browser-use)"
+    fi
 
-chrome_db = os.path.expanduser("~/Library/Application Support/Google/Chrome/Default/Cookies")
-store = os.path.expanduser("~/.browser-ops/cookie-store/unified-state.json")
+    # 3. zendriver (按需)
+    python3 -c "import zendriver" 2>/dev/null \
+      && echo -e "${GREEN}[OK]${NC} zendriver 已安装" \
+      || echo -e "${YELLOW}[SKIP]${NC} zendriver 未安装 (按需: pip install zendriver)"
 
-# Copy DB to avoid lock (Chrome locks the file)
-tmp = tempfile.mktemp(suffix=".db")
-shutil.copy2(chrome_db, tmp)
+    # 4. Cookie store
+    echo ""
+    if [[ -f "$UNIFIED_STATE" && -s "$UNIFIED_STATE" ]]; then
+      AGE_HOURS=$(python3 -c "import os,time; print(f'{(time.time()-os.path.getmtime(os.path.expanduser(\"$UNIFIED_STATE\")))/3600:.0f}')")
+      echo -e "${GREEN}[OK]${NC} Cookie 存储: $(_count_cookies) cookies (${AGE_HOURS}h ago)"
+      if [[ "$AGE_HOURS" -gt 24 ]]; then
+        echo -e "${YELLOW}      → Cookie 超过 24 小时未更新，建议: sync-cookies.sh export${NC}"
+      fi
+    else
+      echo -e "${YELLOW}[SKIP]${NC} Cookie 存储为空 (仅 Stagehand/Zendriver 需要)"
+    fi
 
-conn = sqlite3.connect(tmp)
-cursor = conn.execute("""
-    SELECT host_key, name, path, expires_utc, is_secure, is_httponly, samesite, is_persistent
-    FROM cookies
-    WHERE host_key LIKE '%alibaba%' OR host_key LIKE '%atatech%' OR host_key LIKE '%alipay%'
-          OR host_key LIKE '%taobao%' OR host_key LIKE '%mmstat%' OR host_key LIKE '%aliapp%'
-    ORDER BY host_key
-""")
-
-cookies = []
-for row in cursor:
-    host, name, path, expires_utc, secure, httponly, samesite, persistent = row
-    # Chrome stores expires in microseconds since 1601-01-01; convert to Unix epoch
-    if expires_utc > 0:
-        expires = (expires_utc / 1000000) - 11644473600
-    else:
-        expires = -1
-    cookies.append({
-        "name": name,
-        "domain": host,
-        "path": path,
-        "expires": expires,
-        "secure": bool(secure),
-        "httpOnly": bool(httponly),
-        "session": not bool(persistent),
-        # Note: encrypted_value not exported — Chrome encrypts cookie values on macOS
-    })
-
-conn.close()
-os.unlink(tmp)
-
-# Note: Chrome encrypts cookie values on macOS with Keychain
-# This export gets metadata only — for actual values, use agent-browser export or CDP
-if cookies:
-    # If we have existing state with values, merge metadata only
-    if os.path.exists(store):
-        print(f"Warning: Chrome Cookies DB on macOS encrypts values.")
-        print(f"Found {len(cookies)} cookie entries (metadata only, values encrypted).")
-        print(f"For full cookie export with values, use: sync-cookies.sh export")
-    else:
-        data = {"cookies": cookies, "origins": []}
-        json.dump(data, open(store, "w"), indent=2)
-        print(f"Exported {len(cookies)} cookies (metadata only)")
-else:
-    print("No matching cookies found")
-PYEOF
+    echo ""
+    if [[ $FAIL -eq 0 ]]; then
+      echo -e "${GREEN}=== 全部正常 ===${NC}"
+    else
+      echo -e "${YELLOW}=== 有问题需要修复 ===${NC}"
+    fi
     ;;
 
   import-bu)
@@ -457,7 +449,7 @@ PYEOF
     echo "用法:"
     echo "  sync-cookies.sh login <url>     打开 URL 登录 → 自动保存 Cookie"
     echo "  sync-cookies.sh export          从 agent-browser 导出到统一存储"
-    echo "  sync-cookies.sh export-chrome   从 Chrome DB 导出 (metadata only)"
+    echo "  sync-cookies.sh health          检查所有工具健康状态"
     echo "  sync-cookies.sh import-bu       转换为 browser-use 格式"
     echo "  sync-cookies.sh inject-py <url> 通过 Playwright 注入 Cookie 并访问"
     echo "  sync-cookies.sh status          查看存储状态"
