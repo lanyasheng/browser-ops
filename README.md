@@ -1,27 +1,33 @@
 # browser-ops
 
-[![Version](https://img.shields.io/badge/version-1.0.1-blue)](https://github.com/lanyasheng/browser-ops)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue)](https://github.com/lanyasheng/browser-ops)
 [![License](https://img.shields.io/github/license/lanyasheng/browser-ops)](LICENSE)
 
-AI Agent 的网页访问路由器。登录一次 Chrome，所有工具共享 Cookie。
+AI Agent 的网页访问路由决策指南。WebFetch 403 了自动升级到 opencli，Cookie 零配置。
 
 ## 解决什么问题
 
-AI Agent（Claude Code、Cursor 等）访问网页时只会用 WebFetch，遇到 403、SSO、反爬就放弃。browser-ops 让 AI 自动按成本升级：WebFetch → opencli → browser-use → Zendriver，直到成功。
+AI Agent（Claude Code、Cursor 等）访问网页时只会用 WebFetch，遇到 403、SSO、反爬就放弃。browser-ops 给 AI 一份路由表，让它自动按成本升级：WebFetch → opencli → browser-use → Zendriver，直到成功。
 
-核心卖点：**Cookie 互通持久化** — 你在 Chrome 里登录了什么，所有工具都能直接用。
+只需要装 opencli。browser-use、Zendriver 都是可选的。
 
 ## 快速开始
 
 ```bash
-# 安装
+# 装 opencli
 npm i -g @jackwener/opencli
 
-# 导出 Chrome 的 Cookie 到统一存储
-bash scripts/sync-cookies.sh export
+# Chrome 里装 OpenCLI Browser Bridge 扩展
+# 扩展路径: $(npm root -g)/@jackwener/opencli/extension
 
-# 验证
-bash scripts/sync-cookies.sh verify
+# 验证（三个 OK 才能用）
+opencli doctor
+# [OK] Daemon: running
+# [OK] Extension: connected
+# [OK] Connectivity: connected
+
+# 试一下
+opencli web read --url "https://example.com"
 ```
 
 ## 按场景选工具

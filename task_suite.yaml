@@ -2,7 +2,7 @@
 # Tests routing decisions, tool selection, and trigger accuracy
 
 name: browser-ops
-version: "4.1.0"
+version: "1.1.0"
 description: "Web access router skill evaluation"
 
 tasks:
@@ -56,9 +56,9 @@ tasks:
   - id: internal-screenshot
     prompt: "打开内部网站并截图"
     should_trigger: true
-    expected_behavior: "使用 browser-use screenshot"
+    expected_behavior: "使用 opencli operate screenshot (首选) 或 browser-use screenshot"
     pass_criteria:
-      - "uses browser-use screenshot"
+      - "uses opencli operate screenshot or browser-use screenshot"
 
   - id: zhihu-hot
     prompt: "获取知乎热榜前 20 条"
@@ -112,9 +112,23 @@ tasks:
   - id: browser-click
     prompt: "用浏览器打开 https://example.com 然后点击登录按钮"
     should_trigger: true
-    expected_behavior: "使用 browser-use CLI 交互"
+    expected_behavior: "使用 opencli operate (首选) 或 browser-use CLI"
     pass_criteria:
-      - "uses browser-use open + click"
+      - "uses opencli operate open + click or browser-use"
+
+  - id: form-fill
+    prompt: "帮我在这个网页上填写表单"
+    should_trigger: true
+    expected_behavior: "使用 opencli operate type/select"
+    pass_criteria:
+      - "uses opencli operate for form filling"
+
+  - id: opencli-unavailable
+    prompt: "opencli 没装，帮我读一下这个内网页面"
+    should_trigger: true
+    expected_behavior: "降级到 browser-use --connect 或告知需要安装 opencli"
+    pass_criteria:
+      - "falls back to browser-use or suggests installing opencli"
 
   # --- Negative triggers (should NOT activate skill) ---
   - id: python-coding

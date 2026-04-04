@@ -2,13 +2,12 @@
 name: browser-ops
 description: >-
   网页访问路由器。搜索 抓取 爬取 获取网页 打开网站 查股价 行情 热榜 热门 网站打不开 被拦截 截图 下载网页 批量查询 正文内容 正文提取。
-  scrape crawl fetch browse screenshot cookie session anti-bot cloudflare bypass login web page URL 抓取网页 访问网页 浏览器 下载图片。
+  scrape crawl fetch browse screenshot cookie session anti-bot cloudflare bypass login web page URL 抓取网页 访问网页 浏览器 下载图片 表单 填表 form fill。
   Twitter 微博 小红书 知乎 HackerNews Reddit B站 GitHub trending 豆瓣 淘宝 京东 A股 股价 实时行情。
-  opencli browser-use zendriver stagehand jina。
+  opencli browser-use zendriver stagehand operate。
   Use when user wants to search visit scrape fetch browse any website, check stock prices, get trending topics, take screenshots, bypass anti-bot, reuse login sessions, download web content, fill web forms, batch query web data.
   Also use when WebFetch fails with 403 blocked or empty response.
   Also use when user mentions 打不开 拦截 验证码 超时 加载慢 内部网站 内网 SSO or any URL access issue.
-  Trigger on: 抓取 网页 股价 热榜 截图 网站 浏览器 爬取 下载网页 批量 Cloudflare cookie 登录态 反爬 URL打不开 内部网站 小红书 知乎 HackerNews Twitter 微博 B站
 ---
 
 # Browser Operations — 网页访问路由决策指南
@@ -41,22 +40,28 @@ opencli doctor
 ```
 收到任务
 │
-├─ 有官方 API / RSS？→ 直接调 API ($0)
+├─ 0. opencli 可用吗？(运行 opencli doctor 或检查是否安装)
+│     ├─ 是 → 正常路由（见下方）
+│     └─ 否 → 降级模式: 仅 WebSearch + WebFetch + browser-use
 │
-├─ 要搜索（没给 URL）？
-│  └─ WebSearch (内置) → Exa MCP → opencli google search
+├─ 1. 有官方 API / RSS？→ 直接调 API ($0)
 │
-├─ 有明确 URL？
-│  ├─ 读内容 → WebFetch → 失败(403/SSO) → opencli web read
-│  ├─ 已知平台？→ opencli <platform> <cmd> ($0, 75站点)
-│  └─ 批量(>10/分钟) → AKShare/API 批量请求
+├─ 2. 要搜索（没给 URL）？
+│     └─ WebSearch (内置) → Exa MCP → opencli google search
 │
-├─ 需要交互（点击/填表/截图）？
-│  ├─ opencli operate ⭐ (首选: Cookie 零配置)
-│  ├─ 复杂多步任务 → browser-use -p "自然语言" (AI Agent)
-│  └─ 未知 DOM → Stagehand act/extract (~$0.001/动作)
+├─ 3. 有明确 URL？
+│     ├─ 读内容 → WebFetch → 失败(403/SSO) → opencli web read
+│     ├─ 已知平台？→ opencli <platform> <cmd> (75站点, `opencli list` 查看)
+│     └─ 批量(>10/分钟) → AKShare/API 批量请求
 │
-└─ 被反爬拦截？→ Zendriver (~90% bypass)
+├─ 4. 需要交互（点击/填表/截图）？
+│     ├─ opencli operate ⭐ (首选: Cookie 零配置)
+│     ├─ 复杂多步任务 → browser-use -p "自然语言" (AI Agent)
+│     └─ 未知 DOM → Stagehand act/extract (~$0.001/动作)
+│
+├─ 5. 被反爬拦截？→ Zendriver (~90% bypass)
+│
+└─ 6. 以上都不行？→ 告知用户具体失败原因和建议（不要静默失败）
 ```
 
 ## 工具栈 (3 层，不是 6 层)
