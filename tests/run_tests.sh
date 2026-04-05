@@ -82,18 +82,17 @@ case "$TARGET" in
   all)
     run_test_file "test_structure.sh"
     run_test_file "test_opencli.sh"
-    run_test_file "test_l2_jina.sh"
-    run_test_file "test_l3_agent_browser.sh"
-    run_test_file "test_l4_stagehand.sh"
-    run_test_file "test_l6_anti_detection.sh"
+    run_test_file "# deleted (jina removed)"
+    run_test_file "test_agent_browser.sh"
+    run_test_file "test_stagehand.sh"
+    run_test_file "test_anti_detection.sh"
     run_test_file "test_session.sh"
     ;;
   structure) run_test_file "test_structure.sh" ;;
   opencli)   run_test_file "test_opencli.sh" ;;
-  l2)        run_test_file "test_l2_jina.sh" ;;
-  l3)        run_test_file "test_l3_agent_browser.sh" ;;
-  l4)        run_test_file "test_l4_stagehand.sh" ;;
-  l6)        run_test_file "test_l6_anti_detection.sh" ;;
+  agent-browser) run_test_file "test_agent_browser.sh" ;;
+  stagehand)    run_test_file "test_stagehand.sh" ;;
+  anti-detect)  run_test_file "test_anti_detection.sh" ;;
   session)   run_test_file "test_session.sh" ;;
   *)
     echo "未知目标: $TARGET"
