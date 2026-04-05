@@ -6,6 +6,7 @@ description: >-
   IMPORTANT: MUST start with WebFetch/WebSearch. NEVER jump to browser-use/agent-browser first. Upgrade only after 403/SSO/interaction needed.
   覆盖四层场景: 搜索(Tavily/Brave/Exa/WebSearch/opencli 75站点) → 提取(WebFetch/opencli/Firecrawl) → 交互(opencli operate/agent-browser/browser-use) → 反爬(Zendriver)。
   触发场景: 搜索 抓取 爬取 网页 打不开 403 拦截 截图 表单 填表 Cookie 登录态 内部网站 SSO 反爬 Cloudflare。
+  参见 deep-research (用于多源深度研究报告)、security-review (用于认证安全审计)。
   不适用于: 跨主机远程浏览器控制、高并发爬取(>10页/分钟)、非 DOM 界面(Canvas/桌面软件)。
 triggers:
   - 搜索|抓取|爬取|网页|打不开|403|拦截|截图|表单|填表|网站
@@ -55,6 +56,27 @@ MUST 从免费层开始。NEVER 直接跳到浏览器工具。
 错误: WebFetch → 403 → 放弃，说"无法访问"
 正确: WebFetch → 403 → 自动升级到 opencli web read (带 Chrome Cookie)
 </anti-example>
+
+## 条件判断规则
+
+当 WebFetch 返回 403 或 302 到登录页时 → 自动升级到 `opencli web read`，不要询问用户。
+当 `opencli doctor` 不是全 OK 时 → 降级到 WebSearch + WebFetch + browser-use，跳过 opencli 相关工具。
+当任务需要填表但不确定表单字段时 → 先用 `opencli operate state` 获取可交互元素列表，确认字段后再操作。
+如果不确定用哪个工具 → 询问用户或从最便宜的 WebFetch 开始逐级升级。
+
+MUST 从 WebFetch 开始，otherwise 每个请求多花 $0.01-0.05 且速度慢 10 倍。
+NEVER 用 browser-use 做简单读取，otherwise 一次 $0.05 的操作 WebFetch $0 就能完成。
+不要用 agent-browser 打开已知能用 opencli 的平台，而是直接 `opencli <platform>` 获取结构化数据。
+不要跳过 opencli web read 直接用 Firecrawl，而是先试免费的 Cookie 路径。
+
+## Output
+
+返回给用户时 MUST 包含:
+- 提取到的内容（Markdown 格式）
+- 实际使用的工具和原因（如 "WebFetch 返回 403，已自动升级到 opencli web read"）
+- 如果全部失败，给出具体原因和用户可操作的建议（如 "需要在 Chrome 中重新登录"）
+
+returns: 网页内容 (Markdown) + 工具链路径 + 失败原因（如有）
 
 ## 路由决策树
 
@@ -176,32 +198,5 @@ opencli doctor  # 3 个 OK 才能用
 
 # 按需 (全 CLI，不需要配 MCP)
 npm i -g agent-browser               # Ref 引用/录制/标注截图
-pip install browser-use               # AI Agent 模式
-pip install zendriver                  # 反爬
-pip install tavily-python              # AI 搜索 (需 TAVILY_API_KEY)
-pip install firecrawl                  # 内容提取 (需 FIRECRAWL_API_KEY)
-```
 
-## 为什么全 CLI 不用 MCP
-
-MCP 工具定义常驻上下文：每个 ~250 tokens。Playwright MCP 21 工具 = 5250 tokens；加搜索 MCP = 8000 tokens。**每轮对话固定交税，不管用不用。**
-
-CLI 方式：命令写在 SKILL.md（~2500 tokens），只在 skill 触发时加载。不触发 = 0。省 70%+ 上下文。
-
-## 已知限制
-
-- opencli 依赖 Chrome Extension：没装/Chrome 没开就不能用，回退到 WebFetch + browser-use
-- Tavily/Firecrawl 需 API key：未配置时回退到 WebSearch/WebFetch
-- agent-browser 和 opencli operate 用不同浏览器实例，可以同时打开但操作不同页面：先 close 一个再用另一个
-- Cookie ≠ 永久登录态：SSO token 会过期（通常 8-24 小时），过期后回 Chrome 重新登录即可
-
-## References
-
-- `references/routing.md` — 路由详解 + 搜索/提取/交互工具对比
-- `references/setup.md` — 安装与验证
-- `references/state-management.md` — Cookie 持久化
-- `references/anti-detection.md` — 反爬策略
-
-## 版本历史
-
-- **1.0.0**: 首个正式发布版。全 CLI 零 MCP 架构，四层路由（搜索/提取/交互/反爬），Cookie 零配置
+> See references/ for extended content.

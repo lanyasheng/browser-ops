@@ -25,7 +25,7 @@ WAIT_SECONDS = 8
 
 # ── Nodriver tests ──────────────────────────────────────────────
 
-async def test_nodriver(name: str, url: str) -> dict:
+async def _run_nodriver(name: str, url: str) -> dict:
     """Test a single site with nodriver (undetected-chromedriver successor)."""
     import nodriver as uc
 
@@ -65,14 +65,14 @@ async def run_nodriver_tests() -> list[dict]:
     """Run nodriver tests sequentially (shares browser context)."""
     results = []
     for name, url in SITES:
-        r = await test_nodriver(name, url)
+        r = await _run_nodriver(name, url)
         results.append(r)
     return results
 
 
 # ── Camoufox tests ──────────────────────────────────────────────
 
-def test_camoufox_single(name: str, url: str) -> dict:
+def _run_camoufox_single(name: str, url: str) -> dict:
     """Test a single site with Camoufox (anti-fingerprint Firefox)."""
     from camoufox.sync_api import Camoufox
 
@@ -103,7 +103,7 @@ def run_camoufox_tests() -> list[dict]:
     """Run camoufox tests sequentially."""
     results = []
     for name, url in SITES:
-        r = test_camoufox_single(name, url)
+        r = _run_camoufox_single(name, url)
         results.append(r)
     return results
 
