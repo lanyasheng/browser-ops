@@ -196,6 +196,4 @@ CLI 方式：命令写在 SKILL.md（~2500 tokens），只在 skill 触发时加
 
 ## 版本历史
 
-- **3.0.0**: 全 CLI 零 MCP，description 重写，补充工具命令和 anti-examples
-- **2.0.0**: 搜索层 (Tavily/Brave/Firecrawl)，恢复 agent-browser
-- **1.0.0**: 首个正式发布版
+- **1.0.0**: 首个正式发布版。全 CLI 零 MCP 架构，四层路由（搜索/提取/交互/反爬），Cookie 零配置
