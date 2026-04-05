@@ -2,7 +2,7 @@
 # Tests routing decisions, tool selection, and trigger accuracy
 
 name: browser-ops
-version: "1.1.0"
+version: "1.0.0"
 description: "Web access router skill evaluation"
 
 tasks:

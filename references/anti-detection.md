@@ -4,7 +4,7 @@
 
 | 反爬类型 | 方案 | 状态 |
 |---------|------|------|
-| 普通网站 | agent-browser 直接访问 | ✅ |
+| 普通网站 | opencli web read / agent-browser | ✅ |
 | 需要登录 | CDP + Cookie 持久化 | ✅ 已验证 |
 | 简单验证码 | 手动点一次，后续复用 Cookie | ✅ |
 | Cloudflare 盾 | Zendriver / Camoufox | ✅ 已验证 |
@@ -121,4 +121,4 @@ agent-browser --proxy "$PROXY_URL" open https://hard-target.com
 
 Cloudflare 于 2026 年推出 AI Labyrinth：不再直接封锁爬虫，而是返回 AI 生成的假页面引诱爬虫进入"迷宫"。症状：内容看似正常但数据完全虚假。应对：对抓取结果做内容校验（对比已知真实数据），检测到假页面时切换住宅代理 + 不同指纹重试。
 
-> See also: `setup.md`（工具安装与验证）, `routing.md`（路由升级到 L6 的条件）
+> See also: `setup.md`（安装）, `routing.md`（路由升级条件）

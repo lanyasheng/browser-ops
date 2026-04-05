@@ -15,11 +15,10 @@ done
 # 2. references/ 中所有文件存在
 EXPECTED_REFS=(
   "references/setup.md"
-  "references/architecture.md"
   "references/routing.md"
   "references/state-management.md"
-  "references/jina-usage.md"
   "references/anti-detection.md"
+  "references/opencli-usage.md"
 )
 for ref in "${EXPECTED_REFS[@]}"; do
   if [[ -f "$REPO_DIR/$ref" ]]; then

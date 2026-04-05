@@ -5,3 +5,8 @@ web-articles/
 .improvement-memory/
 evals/comparison_results/
 ata/
+.opencli/
+md/
+web-articles/
+tests/__pycache__/
+tests/.pytest_cache/
