@@ -8,10 +8,13 @@ description: >-
   触发场景: 搜索 抓取 爬取 网页 打不开 403 拦截 截图 表单 填表 Cookie 登录态 内部网站 SSO 反爬 Cloudflare。
   不适用于: 跨主机远程浏览器控制、高并发爬取(>10页/分钟)、非 DOM 界面(Canvas/桌面软件)。
 triggers:
-  - 搜索|抓取|爬取|网页|打不开|403|拦截|截图|表单|填表
-  - Cookie|登录态|内部网站|SSO|反爬|Cloudflare
-  - 股价|热榜|Twitter|微博|知乎|小红书|HackerNews
-  - scrape|crawl|fetch|browse|screenshot|cookie|anti-bot
+  - 搜索|抓取|爬取|网页|打不开|403|拦截|截图|表单|填表|网站
+  - Cookie|登录态|内部网站|SSO|反爬|Cloudflare|内网
+  - 股价|热榜|Twitter|微博|知乎|小红书|HackerNews|B站
+  - scrape|crawl|fetch|browse|screenshot|cookie|anti-bot|web page
+  - 打开.*链接|打开.*URL|打开.*网址|读.*链接|读.*网页|看.*网站|查.*网站
+  - 帮我看|帮我读|帮我搜|帮我查|帮我打开|帮我访问|帮我下载
+  - open.*url|read.*url|visit.*site|access.*page|download.*page
 license: MIT
 ---
 
