@@ -127,7 +127,7 @@ browser-ops/
 
 - opencli 依赖 Chrome Extension + Chrome 运行
 - Tavily/Firecrawl 需 API key，未配置时回退 WebSearch/WebFetch
-- agent-browser 和 opencli operate 不能同时开浏览器
+- agent-browser 和 opencli operate 可以同时运行，但操作同一个 tab 时注意冲突
 - Cookie = 快照，SSO token 过期需回 Chrome 重新登录
 
 ## License
