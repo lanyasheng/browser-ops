@@ -7,6 +7,11 @@ description: >-
   覆盖四层场景: 搜索(Tavily/Brave/Exa/WebSearch/opencli 75站点) → 提取(WebFetch/opencli/Firecrawl) → 交互(opencli operate/agent-browser/browser-use) → 反爬(Zendriver)。
   触发场景: 搜索 抓取 爬取 网页 打不开 403 拦截 截图 表单 填表 Cookie 登录态 内部网站 SSO 反爬 Cloudflare。
   不适用于: 跨主机远程浏览器控制、高并发爬取(>10页/分钟)、非 DOM 界面(Canvas/桌面软件)。
+triggers:
+  - 搜索|抓取|爬取|网页|打不开|403|拦截|截图|表单|填表
+  - Cookie|登录态|内部网站|SSO|反爬|Cloudflare
+  - 股价|热榜|Twitter|微博|知乎|小红书|HackerNews
+  - scrape|crawl|fetch|browse|screenshot|cookie|anti-bot
 license: MIT
 ---
 
@@ -184,7 +189,7 @@ CLI 方式：命令写在 SKILL.md（~2500 tokens），只在 skill 触发时加
 
 - opencli 依赖 Chrome Extension：没装/Chrome 没开就不能用，回退到 WebFetch + browser-use
 - Tavily/Firecrawl 需 API key：未配置时回退到 WebSearch/WebFetch
-- agent-browser 和 opencli operate 不能同时打开浏览器：先 close 一个再用另一个
+- agent-browser 和 opencli operate 用不同浏览器实例，可以同时打开但操作不同页面：先 close 一个再用另一个
 - Cookie ≠ 永久登录态：SSO token 会过期（通常 8-24 小时），过期后回 Chrome 重新登录即可
 
 ## References
