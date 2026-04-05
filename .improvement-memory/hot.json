@@ -23,9 +23,35 @@
     "context": {
       "dimension": "trigger_quality",
       "action": "Expanded SKILL.md description with multi-line trigger keywords covering: Chinese/English queries, platform names, failure scenarios (打不开/拦截/验证码/超时), URL access issues, stock/trending queries",
-      "files_changed": ["SKILL.md", "evals/evals.json", "evals/trigger_evals.json", "evals/eval_results.json", "README.md", "tests/test_smoke.py", "task_suite.yaml"]
+      "files_changed": [
+        "SKILL.md",
+        "evals/evals.json",
+        "evals/trigger_evals.json",
+        "evals/eval_results.json",
+        "README.md",
+        "tests/test_smoke.py",
+        "task_suite.yaml"
+      ]
     },
     "timestamp": "2026-04-04T16:10:00Z",
     "hit_count": 1
+  },
+  {
+    "type": "efficiency",
+    "succeeded": true,
+    "context": {
+      "dimension": "efficiency",
+      "scores": {
+        "coverage": 1.0,
+        "accuracy": 1.0,
+        "efficiency": 0.997,
+        "reliability": 1.0,
+        "security": 1.0,
+        "trigger_quality": 1.0
+      }
+    },
+    "timestamp": "2026-04-05T04:33:27Z",
+    "hit_count": 4,
+    "last_hit": "2026-04-05T04:34:03Z"
   }
 ]
