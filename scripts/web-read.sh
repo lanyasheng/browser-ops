@@ -7,12 +7,19 @@ set -euo pipefail
 URL="${1:?Usage: web-read.sh \"url\"}"
 
 # Layer 1: opencli web read (Cookie 零配置)
-result=$(opencli web read --url "$URL" -f md 2>&1) || true
+opencli_exit=0
+result=$(opencli web read --url "$URL" -f md 2>&1) || opencli_exit=$?
 if [ -n "$result" ] && [ ${#result} -gt 200 ] && ! echo "$result" | grep -qiE "error|failed|exit code"; then
     echo "$result"
     exit 0
 fi
-echo "# [web-read] opencli web read failed, trying firecrawl..." >&2
+# exit 77 = SSO/Cookie 过期，后续层也没有登录态，直接 bail out
+if [ "$opencli_exit" -eq 77 ]; then
+    echo "# [web-read] SSO/Cookie expired (exit 77). Please re-login in Chrome, then retry."
+    echo "# 后续工具 (firecrawl/agent-browser) 也没有登录态，跳过降级。"
+    exit 77
+fi
+echo "# [web-read] opencli web read failed (exit $opencli_exit), trying firecrawl..." >&2
 
 # Layer 2: Firecrawl (JS 渲染 + 结构化提取)
 if command -v firecrawl &>/dev/null && [ -n "${FIRECRAWL_API_KEY:-}" ]; then

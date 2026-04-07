@@ -60,6 +60,7 @@ MUST 从免费层开始。NEVER 直接跳到浏览器工具。
 ## 条件判断规则
 
 当 WebFetch 返回 403 或 302 到登录页时 → 自动升级到 `opencli web read`，不要询问用户。
+当 `opencli web read` 返回 exit 77 时 → SSO/Cookie 过期，MUST 停止降级，直接提示用户回 Chrome 登录后重试。后续工具 (firecrawl/agent-browser) 也没有登录态，继续降级只是浪费。
 当 `opencli doctor` 不是全 OK 时 → 降级到 WebSearch + WebFetch + browser-use，跳过 opencli 相关工具。
 当任务需要填表但不确定表单字段时 → 先用 `opencli operate state` 获取可交互元素列表，确认字段后再操作。
 如果不确定用哪个工具 → 询问用户或从最便宜的 WebFetch 开始逐级升级。
@@ -95,6 +96,8 @@ returns: 网页内容 (Markdown) + 工具链路径 + 失败原因（如有）
 │
 ├─ 2. 有 URL，要内容?
 │     ├─ WebFetch ($0) → 403/SSO? → opencli web read ($0, Cookie 直连)
+│     │     ├─ exit 77 (SSO 过期) → 停止降级，提示用户回 Chrome 登录
+│     │     └─ 其他失败 (JS 不足/内容太短) → 继续降级到 firecrawl
 │     ├─ JS 渲染/PDF/结构化 → firecrawl scrape "url"
 │     └─ 已知平台 → opencli <platform> (opencli list 查看)
 │
@@ -117,7 +120,7 @@ returns: 网页内容 (Markdown) + 工具链路径 + 失败原因（如有）
 |------------|--------|------|
 | WebFetch → 403/302 登录页 | opencli web read | `opencli web read --url "url"` |
 | WebFetch → 空/SPA 空壳 | Firecrawl | `firecrawl scrape "url"` |
-| opencli → exit 77 | 手动登录 | 在 Chrome 里重新登录，再重试 |
+| opencli → exit 77 | 停止降级，提示用户 | SSO 过期，后续工具也没登录态，直接提示用户回 Chrome 登录 |
 | 需要点击/填表 | opencli operate | `opencli operate open "url" && state` |
 | 编号 [N] 不稳定 | agent-browser | `agent-browser snapshot -i` → `click @e1` |
 | 多步复杂任务 | browser-use | `browser-use -p "任务描述"` |
