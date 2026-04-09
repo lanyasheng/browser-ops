@@ -3,7 +3,7 @@ name: browser-ops
 description: >-
   AI Agent 的网页访问路由决策指南。全 CLI 架构，零 MCP 依赖，不占常驻上下文 token。
   按成本逐级升级: WebFetch($0) → opencli web read($0,带Cookie) → Firecrawl → agent-browser → browser-use。
-  IMPORTANT: MUST start with WebFetch/WebSearch. NEVER jump to browser-use/agent-browser first. Upgrade only after 403/SSO/interaction needed.
+  IMPORTANT: For sites with opencli adapters (74 sites), use `opencli <platform>` directly — NEVER WebFetch/web read. For other sites, start with WebFetch. NEVER jump to browser-use/agent-browser first.
   覆盖四层场景: 搜索(Tavily/Brave/Exa/WebSearch/opencli 75站点) → 提取(WebFetch/opencli/Firecrawl) → 交互(opencli operate/agent-browser/browser-use) → 反爬(Zendriver)。
   触发场景: 搜索 抓取 爬取 网页 打不开 403 拦截 截图 表单 填表 Cookie 登录态 内部网站 SSO 反爬 Cloudflare。
   参见 deep-research (用于多源深度研究报告)、security-review (用于认证安全审计)。
@@ -28,8 +28,12 @@ license: MIT
 
 MUST 从免费层开始。NEVER 直接跳到浏览器工具。
 
-每次网页任务按这个顺序判断，命中就停：
-1. WebFetch/WebSearch 能搞定？→ 用它，$0
+每次网页任务按这个顺序判断，**命中就停**：
+0. **目标是 opencli 已适配平台？→ 直接 `opencli <platform> <command>`，跳过 WebFetch**
+   判断方法：URL 域名或用户意图命中已适配站点（`opencli list` 查看完整列表，74 个站点 454 条命令）。
+   常见已适配平台：twitter/x.com, zhihu, weibo, bilibili, hackernews, xiaohongshu, douyin, reddit, youtube, github, arxiv, bloomberg, linkedin, douban, jd, wikipedia, v2ex, tieba, spotify, steam, medium, substack, producthunt, stackoverflow, 36kr, weread, xueqiu 等。
+   这些平台有专属适配器，返回结构化数据，比 web read 更准确更高效。
+1. WebFetch/WebSearch 能搞定（非已适配平台）？→ 用它，$0
 2. 403/SSO/空？→ `opencli web read`，$0，Cookie 零配置
 3. 需要 JS 渲染/结构化？→ `firecrawl scrape "url"`
 4. 需要交互（≤3 步）？→ `opencli operate`，Cookie 零配置
@@ -37,18 +41,24 @@ MUST 从免费层开始。NEVER 直接跳到浏览器工具。
 6. 需要 AI 自主多步？→ `browser-use -p "任务"`，$0.01-0.05/步
 7. 被反爬拦截？→ `zendriver`
 
-违反顺序 = 浪费钱。"读一篇文章"用 WebFetch $0，用 browser-use $0.05。
+违反顺序 = 浪费钱或丢失数据。已适配平台用 `opencli web read` 只能拿到 HTML，用 `opencli <platform>` 能拿到结构化字段。
+
+<anti-example>
+用户: "搜一下 Twitter 上关于 AI agent 的讨论"
+错误: opencli web read --url "https://x.com/search?q=AI+agent" → 拿到 HTML 残片
+正确: opencli twitter search "AI agent" → 结构化推文列表 (id, author, text, likes, views)
+</anti-example>
+
+<anti-example>
+用户: "帮我看看知乎热榜"
+错误: WebFetch("https://www.zhihu.com/hot") → 空/SPA 空壳
+正确: opencli zhihu hot → 结构化热榜列表
+</anti-example>
 
 <anti-example>
 用户: "帮我看看 https://example.com/article 的内容"
 错误: browser-use -p "extract content from example.com" → $0.05
-正确: WebFetch("https://example.com/article") → $0
-</anti-example>
-
-<anti-example>
-用户: "搜索 AI agent 最新进展"
-错误: opencli operate open "google.com" → type → click (用浏览器模拟搜索)
-正确: WebSearch("AI agent 最新进展") → $0
+正确: WebFetch("https://example.com/article") → $0 (example.com 不是已适配平台)
 </anti-example>
 
 <anti-example>
@@ -65,9 +75,9 @@ MUST 从免费层开始。NEVER 直接跳到浏览器工具。
 当任务需要填表但不确定表单字段时 → 先用 `opencli operate state` 获取可交互元素列表，确认字段后再操作。
 如果不确定用哪个工具 → 询问用户或从最便宜的 WebFetch 开始逐级升级。
 
-MUST 从 WebFetch 开始，otherwise 每个请求多花 $0.01-0.05 且速度慢 10 倍。
+已适配平台 MUST 直接用 `opencli <platform>`，NEVER 走 WebFetch/web read 通路，otherwise 丢失结构化数据。
+非已适配平台 MUST 从 WebFetch 开始，otherwise 每个请求多花 $0.01-0.05 且速度慢 10 倍。
 NEVER 用 browser-use 做简单读取，otherwise 一次 $0.05 的操作 WebFetch $0 就能完成。
-不要用 agent-browser 打开已知能用 opencli 的平台，而是直接 `opencli <platform>` 获取结构化数据。
 不要跳过 opencli web read 直接用 Firecrawl，而是先试免费的 Cookie 路径。
 
 ## Output
@@ -87,21 +97,25 @@ returns: 网页内容 (Markdown) + 工具链路径 + 失败原因（如有）
 ├─ 0. opencli 可用? → opencli doctor (3 个 OK)
 │     否 → 降级: WebSearch + WebFetch + browser-use
 │
-├─ 1. 要搜索（没 URL）?
+├─ 1. 目标是已适配平台? (URL 域名 或 用户意图 命中 opencli list 中的站点)
+│     是 → 直接 opencli <platform> <command>，跳过 WebFetch/web read
+│     例: twitter/x.com → opencli twitter search/timeline/trending
+│         zhihu.com → opencli zhihu hot/search/answer
+│         bilibili.com → opencli bilibili search/hot/subtitle
+│
+├─ 2. 要搜索（没 URL，非已适配平台）?
 │     ├─ WebSearch (内置, 始终可用)
 │     ├─ 深度搜索 → tavily search "query" --search-depth advanced
 │     ├─ 独立索引 → curl brave API
-│     ├─ 平台搜索 → opencli <platform> search (75 站点)
 │     └─ fallback → opencli google search
 │
-├─ 2. 有 URL，要内容?
+├─ 3. 有 URL，非已适配平台?
 │     ├─ WebFetch ($0) → 403/SSO? → opencli web read ($0, Cookie 直连)
 │     │     ├─ exit 77 (SSO 过期) → 停止降级，提示用户回 Chrome 登录
 │     │     └─ 其他失败 (JS 不足/内容太短) → 继续降级到 firecrawl
-│     ├─ JS 渲染/PDF/结构化 → firecrawl scrape "url"
-│     └─ 已知平台 → opencli <platform> (opencli list 查看)
+│     └─ JS 渲染/PDF/结构化 → firecrawl scrape "url"
 │
-├─ 3. 要交互?
+├─ 4. 要交互?
 │     ├─ ≤3 步 → opencli operate (Cookie 零配置, 17 个命令)
 │     │   open → state → click/type/select/scroll → screenshot → close
 │     ├─ 需要稳定引用/录制/标注截图 → agent-browser (60+ 命令)
@@ -109,7 +123,7 @@ returns: 网页内容 (Markdown) + 工具链路径 + 失败原因（如有）
 │     ├─ AI 自主多步 → browser-use -p "自然语言任务"
 │     └─ 未知 DOM → Stagehand act("点击登录")
 │
-├─ 4. 被反爬? → python -c "import zendriver as zd; ..."
+├─ 5. 被反爬? → python -c "import zendriver as zd; ..."
 │
 └─ 全失败 → 告知用户具体原因和建议，NEVER 静默失败
 ```
